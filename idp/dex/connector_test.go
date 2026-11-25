@@ -203,3 +203,30 @@ func TestUpdateConnector_AllowsSameTypeUpdate(t *testing.T) {
 	require.NoError(t, json.Unmarshal(conn.Config, &m))
 	assert.Equal(t, "https://login.microsoftonline.com/new/v2.0", m["issuer"])
 }
+
+func TestBuildOIDCConnectorConfig_GetUserInfo(t *testing.T) {
+	// Generic OIDC providers may return profile claims such as name only from
+	// the UserInfo endpoint, so the generic type must fetch it like zitadel.
+	for _, tc := range []struct {
+		typ  string
+		want bool
+	}{
+		{"oidc", true},
+		{"zitadel", true},
+		{"entra", false},
+		{"okta", false},
+		{"pocketid", false},
+		{"authentik", false},
+		{"keycloak", false},
+		{"adfs", false},
+	} {
+		t.Run(tc.typ, func(t *testing.T) {
+			data, err := buildOIDCConnectorConfig(&ConnectorConfig{Type: tc.typ}, "https://example.com/oauth2/callback")
+			require.NoError(t, err)
+			var m map[string]any
+			require.NoError(t, json.Unmarshal(data, &m))
+			got, _ := m["getUserInfo"].(bool)
+			assert.Equal(t, tc.want, got)
+		})
+	}
+}
