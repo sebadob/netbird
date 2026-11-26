@@ -228,7 +228,9 @@ func buildOIDCConnectorConfig(cfg *ConnectorConfig, redirectURI string) ([]byte,
 		"insecureSkipEmailVerified": true,
 	}
 	switch cfg.Type {
-	case "zitadel":
+	case "zitadel", "oidc":
+		// OIDC Core 5.4: when an access token is issued, providers may return
+		// profile claims such as name only from the UserInfo endpoint.
 		oidcConfig["getUserInfo"] = true
 	case "entra":
 		oidcConfig["claimMapping"] = map[string]string{"email": "preferred_username"}
